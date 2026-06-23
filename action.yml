@@ -1,0 +1,52 @@
+name: "Setup HSP"
+description: "Download and extract a specific version of HSP3, exposing its install path as an output (hsp-home). Caches the extracted install by version."
+
+inputs:
+  hsp-version:
+    description: 'HSP3 version to install, e.g. "3.6" or "3.7"'
+    required: true
+
+outputs:
+  hsp-home:
+    description: "Path to the extracted HSP3 installation."
+    value: ${{ steps.output.outputs.hsp-home }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute paths
+      id: vars
+      shell: pwsh
+      run: |
+        $version = "${{ inputs.hsp-version }}" -replace '\.', ''
+        $dest = Join-Path $env:RUNNER_TEMP "hsp$version"
+        "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+        "dest=$dest" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+    - name: Cache HSP3 install
+      id: cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ steps.vars.outputs.dest }}
+        key: hsp-${{ steps.vars.outputs.version }}
+
+    - name: Download and extract HSP
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $version = "${{ steps.vars.outputs.version }}"
+        $zipUrl = "https://www.onionsoft.net/hsp/file/hsp$version.zip"
+        $zipPath = Join-Path $env:RUNNER_TEMP "hsp$version.zip"
+
+        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath
+
+        # 配布zip内のファイル名はShift-JIS(CP932)でエンコードされているため、
+        # 既定(UTF-8)のExpand-Archiveでは展開に失敗する。CP932を明示して展開する。
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $env:RUNNER_TEMP, [System.Text.Encoding]::GetEncoding(932))
+
+    - name: Set output
+      id: output
+      shell: pwsh
+      run: |
+        "hsp-home=${{ steps.vars.outputs.dest }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
