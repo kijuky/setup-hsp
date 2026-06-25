@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        hsp-version: ["3.6", "3.7"]
+
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Setup SDK
+        id: setup-sdk
+        uses: ./
+        with:
+          hsp-version: ${{ matrix.hsp-version }}
+
+      - name: Verify hsp-home output
+        shell: pwsh
+        run: |
+          $path = "${{ steps.setup-sdk.outputs.hsp-home }}"
+          if (-not $path) { throw "hsp-home output was empty" }
+          if (-not (Test-Path "$path\hspcmp.exe")) { throw "hspcmp.exe not found at $path" }
+          Write-Host "hsp-home: $path"
