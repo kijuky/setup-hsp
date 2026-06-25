@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Setup SDK
-        id: setup-sdk
+        id: setup-hsp
         uses: ./
         with:
           hsp-version: ${{ matrix.hsp-version }}
@@ -25,7 +25,7 @@ jobs:
       - name: Verify hsp-home output
         shell: pwsh
         run: |
-          $path = "${{ steps.setup-sdk.outputs.hsp-home }}"
+          $path = "${{ steps.setup-hsp.outputs.hsp-home }}"
           if (-not $path) { throw "hsp-home output was empty" }
           if (-not (Test-Path "$path\hspcmp.exe")) { throw "hspcmp.exe not found at $path" }
           Write-Host "hsp-home: $path"

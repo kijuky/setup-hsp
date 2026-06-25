@@ -16,7 +16,7 @@
 
 ```yaml
 - name: Setup HSP
-  id: setup-sdk
+  id: setup-hsp
   uses: kijuky/setup-hsp@<commit-sha>
   with:
     hsp-version: "3.6"
